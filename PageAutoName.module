@@ -1,0 +1,156 @@
+<?php
+class PageAutoName extends WireData implements Module, ConfigurableModule {
+
+    public static function getModuleConfigInputfields(array $data)
+    {
+        $wrapper = new InputfieldWrapper();
+
+        $generalPatternField = wire('modules')->get('InputfieldText');
+        $generalPatternField->name = 'generalPattern';
+        $generalPatternField->label = __('General Pattern');
+        $generalPatternField->description = __('After save, the following pattern is used to rename the certain page unless not specified individually per template.');
+        if (isset($data['generalPattern'])) $generalPatternField->value = $data['generalPattern'];
+        $wrapper->add($generalPatternField);
+
+        $description = wire('modules')->get('InputfieldMarkup');
+        $description->label = __('Pattern Examples');
+        $description->description = __("Supply inputfield names separated by space that will be used for building the page's new name. Examples:").
+            "<ul><li><b>title created</b> ". __("will return something like my-page-title-1413377846") ."</li>".
+            "<li><b>title headline</b> ". __("will return both title and headline, like page-title-a-fancy-headline") .'</li>'.
+            "<p>".__('If the page name is already available, the page will be added a suffix like page-title-')."<b>1</b></p>"
+        ;
+        $wrapper->add($description);
+
+        $applyToAllTemplatesField = wire('modules')->get('InputfieldCheckbox');
+        $applyToAllTemplatesField->name = 'applyToAllTemplates';
+        $applyToAllTemplatesField->label = __('Apply to all Templates');
+        $applyToAllTemplatesField->description = __('If enabled, the general pattern will be applied to all templates.');
+        if (isset($data['applyToAllTemplates']) && $data['applyToAllTemplates'] == 1) $applyToAllTemplatesField->checked = 1;
+        $wrapper->add($applyToAllTemplatesField);
+
+        $individualPatterns = array();
+        $specifiedTemplatesField = wire('modules')->get('InputfieldCheckboxes');
+        $specifiedTemplatesField->name = 'specifiedTemplates';
+        $specifiedTemplatesField->label = __('Specify Templates');
+        $specifiedTemplatesField->description = __('Select the templates you want to be renamed on save.');
+        foreach(wire('templates')->find('*') as $template) {
+
+            // Don't apply to system templates
+            if ($template->flags & Template::flagSystem) continue;
+
+            // Don't apply to home
+            if ($template->id == 1) continue;
+
+            $specifiedTemplatesField->addOption($template->name, ($template->label == '' ? $template->name : $template->label));
+
+            $patternField = wire('modules')->get('InputfieldText');
+            $patternField->name = "pattern-{$template->name}";
+            $patternField->label = sprintf( __('Pattern for %s'), ($template->label == '' ? $template->name : $template->label));
+            $patternField->description = __('Leave this field empty to use the general pattern');
+            if (isset($data["pattern-{$template->name}"])) $patternField->value = $data["pattern-{$template->name}"];
+            $patternField->showIf = "specifiedTemplates={$template->name}";
+            $patternField->collapsed = Inputfield::collapsedBlank;
+            $individualPatterns[] = $patternField;
+
+        }
+        if (isset($data['specifiedTemplates'])) $specifiedTemplatesField->value = $data['specifiedTemplates'];
+        $specifiedTemplatesField->showIf = 'applyToAllTemplates!=1';
+        $wrapper->add($specifiedTemplatesField);
+
+        foreach ($individualPatterns as $pattern) $wrapper->add($pattern);
+
+        return $wrapper;
+    }
+
+    public static function getModuleInfo() {
+        return array(
+            'title' => __('Auto Name'),
+            'summary' => __("Changes a page's name field after the page has been edited"),
+            'author' => 'Conclurer GbR',
+            'version' => '100',
+            'autoload' => true
+        );
+    }
+
+    protected $applyToAllTemplates = false, $specifiedTemplates = array(), $generalPattern = null, $individualPatterns = array();
+
+    public function init() {
+        if (isset($this->data['applyToAllTemplates'])) $this->applyToAllTemplates = $this->data['applyToAllTemplates'] == 1;
+
+        if (!$this->applyToAllTemplates && !empty($this->data['specifiedTemplates'])) {
+            $this->specifiedTemplates = $this->data['specifiedTemplates'];
+        }
+
+        if (!$this->applyToAllTemplates) {
+            foreach ($this->data as $key => $value) {
+                if (substr($key, 0, 8) != 'pattern-') continue;
+
+                $this->individualPatterns[str_replace('pattern-', '', $key)] = $value;
+            }
+        }
+
+        if (!empty($this->data['generalPattern'])) $this->generalPattern = $this->data['generalPattern'];
+
+        $this->addHookBefore('Pages::save', $this, 'hookBeforePageSave');
+    }
+
+    public function hookBeforePageSave(HookEvent $event) {
+        $page = $event->arguments[0];
+
+        // Cancel if template not allowed
+        if (!$this->templateAllowed($page->template)) return;
+
+        $patternElements = explode(' ', $this->getPatternForTemplate($page->template));
+        $newNameElements = array();
+        foreach ($patternElements as $element) {
+            if ($page->$element == null) continue;
+
+            $newNameElements[] = "".$page->$element;
+        }
+
+        // Cancel if name would be nil
+        if (count($newNameElements) == 0) return;
+
+        // Unify the page's name
+        $baseName = $this->sanitizer->pageName(implode('-',$newNameElements), true);
+        $suffix = 0;
+        while(true) {
+            $newName = $baseName.($suffix > 0 ? "-$suffix" : "");
+
+            // Cancel if the new name is equal to the old name
+            if ($newName == $page->name) return;
+
+            // Check if other page exists with this name
+            $existingPage = $page->siblings("name=$newName")->first();
+
+            if ($existingPage->id > 0) {
+                $suffix++;
+            }
+            else {
+                break;
+            }
+        }
+
+        $page->name = $baseName.($suffix > 0 ? "-$suffix" : "");
+
+        $event->return = $page;
+    }
+
+    protected function templateAllowed(Template $template) {
+        if ($this->generalPattern == null) return false;
+
+        if ($this->applyToAllTemplates) return true;
+
+        return in_array($template->name, $this->specifiedTemplates);
+    }
+
+    protected function getPatternForTemplate (Template $template) {
+        if (empty($this->individualPatterns[$template->name])) {
+            if ($this->generalPattern == null) return '';
+
+            return $this->generalPattern;
+        }
+
+        return $this->individualPatterns[$template->name];
+    }
+}

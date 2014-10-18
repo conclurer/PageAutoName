@@ -1,0 +1,51 @@
+{
+    "file": "site\/modules\/PageAutoName\/PageAutoName.module",
+    "textdomain": "site--modules--pageautoname--pageautoname-module",
+    "translations": {
+        "1f912880d8a904bb22e1ed5ffefc1a12": {
+            "text": "Allgemeines Schema"
+        },
+        "0de9543e132822652bb06477064b3f0d": {
+            "text": "Nach dem Speichern einer Seite wird dieses Schema angewendet, sofern kein individuelles Schema f\u00fcr das entsprechende Template definiert wurde."
+        },
+        "2277b5f05d8a89c25c6cb0b001a9885a": {
+            "text": "Schemabeispiele"
+        },
+        "f3bc3f7b9fa9240cb7fab867c0413e97": {
+            "text": "Geben Sie Felder, getrennt mit Leerzeichen, ein, welche dazu verwendet werden sollen, den Seitennamen zu erstellen. Beispiele:"
+        },
+        "6d84566a0e9d9d487f5c2e7ee5739a1d": {
+            "text": "wird etwas in dieser Art zur\u00fcckgeben: mein-seitentitel-1413377846"
+        },
+        "752574b965ca9ac47072543064ec0790": {
+            "text": "wird sowohl den Titel als auch das Feld \"Headline\" in \u00e4hnlicher Form zur\u00fcckgeben: seitentitel-und-eine-ueberschrift"
+        },
+        "6d23751190d19ae758bbc57ff41b4e95": {
+            "text": "falls der Seitenname bereits verf\u00fcgbar sein sollte, wird dem Seitenname ein Suffix hinzugef\u00fcgt, \u00e4hnlich wie seitentitel-"
+        },
+        "a7ad9202262eacb108fde7c9a089b24d": {
+            "text": "Auf alle Templates anwenden"
+        },
+        "6036082567a3afd2a01fe2112274852b": {
+            "text": "Falls aktiviert, wird das allgemeine Schema auf alle Templates angewendet."
+        },
+        "6c4dd9888be4b0553876874166ba26e2": {
+            "text": "Templates ausw\u00e4hlen"
+        },
+        "4254a6b2dceb872ef95282d4f6226769": {
+            "text": "W\u00e4hlen Sie die Templates aus, welche beim Speichern umbenannt werden sollen."
+        },
+        "6df90958b692733676e29d98670a4440": {
+            "text": "Schema f\u00fcr %s"
+        },
+        "3ce9fce5c1ee58d9f40faa4ac449f737": {
+            "text": "Lassen Sie das Feld leer, falls das allgemeine Schema verwendet werden soll"
+        },
+        "ac777e4b206e5d63aa7109ef3246c487": {
+            "text": "Automatischer Name"
+        },
+        "5c1e690ef72c31ea2ea8a0ad9083b6c2": {
+            "text": "\u00c4ndert den Namen einer Seite, nachdem diese bearbeitet wurde"
+        }
+    }
+}

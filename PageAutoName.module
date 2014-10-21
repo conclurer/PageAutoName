@@ -25,8 +25,17 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
         $applyToAllTemplatesField->name = 'applyToAllTemplates';
         $applyToAllTemplatesField->label = __('Apply to all Templates');
         $applyToAllTemplatesField->description = __('If enabled, the general pattern will be applied to all templates.');
+        $applyToAllTemplatesField->columnWidth = 50;
         if (isset($data['applyToAllTemplates']) && $data['applyToAllTemplates'] == 1) $applyToAllTemplatesField->checked = 1;
         $wrapper->add($applyToAllTemplatesField);
+
+        $applyOnlyOnPublishField = wire('modules')->get('InputfieldCheckbox');
+        $applyOnlyOnPublishField->name = 'applyOnlyOnPublish';
+        $applyOnlyOnPublishField->label = __('Apply only when published');
+        $applyOnlyOnPublishField->description = __('If enabled, the page is only renamed when being published.');
+        $applyOnlyOnPublishField->columnWidth = 50;
+        if (isset($data['applyOnlyOnPublish']) && $data['applyOnlyOnPublish'] == 1) $applyOnlyOnPublishField->checked = 1;
+        $wrapper->add($applyOnlyOnPublishField);
 
         $individualPatterns = array();
         $specifiedTemplatesField = wire('modules')->get('InputfieldCheckboxes');
@@ -59,6 +68,15 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
 
         foreach ($individualPatterns as $pattern) $wrapper->add($pattern);
 
+        $defaultDateFormatField = wire('modules')->get('InputfieldText');
+        $defaultDateFormatField->name = "defaultDateFormat";
+        $defaultDateFormatField->label = __('Default Date Format');
+        $defaultDateFormatField->description = __('Enter a default format for created and updated dates, leave blank for using the timestamp.');
+        $defaultDateFormatField->notes = __("Please see the parameters of the date function at php.net");
+        if (isset($data["defaultDateFormat"])) $defaultDateFormatField->value = $data["defaultDateFormat"];
+        $defaultDateFormatField->collapsed = Inputfield::collapsedBlank;
+        $wrapper->add($defaultDateFormatField);
+
         return $wrapper;
     }
 
@@ -67,15 +85,16 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
             'title' => __('Auto Name'),
             'summary' => __("Changes a page's name field after the page has been edited"),
             'author' => 'Conclurer GbR',
-            'version' => '100',
+            'version' => '110',
             'autoload' => true
         );
     }
 
-    protected $applyToAllTemplates = false, $specifiedTemplates = array(), $generalPattern = null, $individualPatterns = array();
+    protected $applyToAllTemplates = false, $applyOnlyOnPublish = false, $specifiedTemplates = array(), $generalPattern = null, $individualPatterns = array(), $defaultDateFormat = null;
 
     public function init() {
         if (isset($this->data['applyToAllTemplates'])) $this->applyToAllTemplates = $this->data['applyToAllTemplates'] == 1;
+        if (isset($this->data['applyOnlyOnPublish'])) $this->applyOnlyOnPublish = $this->data['applyOnlyOnPublish'] == 1;
 
         if (!$this->applyToAllTemplates && !empty($this->data['specifiedTemplates'])) {
             $this->specifiedTemplates = $this->data['specifiedTemplates'];
@@ -90,6 +109,7 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
         }
 
         if (!empty($this->data['generalPattern'])) $this->generalPattern = $this->data['generalPattern'];
+        if (!empty($this->data['defaultDateFormat'])) $this->defaultDateFormat = $this->data['defaultDateFormat'];
 
         $this->addHookBefore('Pages::save', $this, 'hookBeforePageSave');
     }
@@ -100,13 +120,11 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
         // Cancel if template not allowed
         if (!$this->templateAllowed($page->template)) return;
 
-        $patternElements = explode(' ', $this->getPatternForTemplate($page->template));
-        $newNameElements = array();
-        foreach ($patternElements as $element) {
-            if ($page->$element == null) continue;
+        // Cancel if already published and application only on publish set
+        if ($this->applyOnlyOnPublish && !($page->status & Page::statusUnpublished)) return;
 
-            $newNameElements[] = "".$page->$element;
-        }
+        $patternElements = explode(' ', $this->getPatternForTemplate($page->template));
+        $newNameElements = $this->getPageNameElements($page, $patternElements);
 
         // Cancel if name would be nil
         if (count($newNameElements) == 0) return;
@@ -137,6 +155,9 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
     }
 
     protected function templateAllowed(Template $template) {
+        // Reject system templates
+        if ($template->flags & Template::flagSystem) return false;
+
         if ($this->generalPattern == null) return false;
 
         if ($this->applyToAllTemplates) return true;
@@ -152,5 +173,22 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
         }
 
         return $this->individualPatterns[$template->name];
+    }
+
+    protected function getPageNameElements(Page $page, $fields=array()) {
+        $newNameElements = array();
+        $page->outputFormatting = true;
+        foreach ($fields as $element) {
+            if ($page->$element == null) continue;
+
+            if (($element == 'created' || $element == 'updated') && $this->defaultDateFormat != null) {
+                $newNameElements[] = date($this->defaultDateFormat, $page->$element);
+            }
+            else $newNameElements[] = "".$page->$element;
+        }
+
+        $page->outputFormatting = false;
+
+        return $newNameElements;
     }
 }

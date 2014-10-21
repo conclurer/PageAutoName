@@ -46,6 +46,21 @@
         },
         "5c1e690ef72c31ea2ea8a0ad9083b6c2": {
             "text": "\u00c4ndert den Namen einer Seite, nachdem diese bearbeitet wurde"
+        },
+        "bf876a40667b34b05b704b7ef296c1a4": {
+            "text": "Nur beim Ver\u00f6ffentlichen anwenden"
+        },
+        "7a2cda2959894fbd64b476085c322062": {
+            "text": "Falls aktiviert, wird der Name der Seite nur bei der Ver\u00f6ffentlichung ge\u00e4ndert."
+        },
+        "616cda9f47ab5b432eae60bb5fa0ef7f": {
+            "text": "Standard-Datumsformat"
+        },
+        "8f33c76181f9a6a127a51bcf1561e877": {
+            "text": "Geben Sie ein Standardformat f\u00fcr Erstellungs- und \u00c4nderungsdaten ein. Lassen Sie das Feld frei, um den Timestamp zu benutzen."
+        },
+        "afb9486f17439c5c5c86274687a122c7": {
+            "text": "Bitte verwenden Sie die Parameter der date-Funktion. Diese finden Sie auf php.net."
         }
     }
 }

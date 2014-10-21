@@ -8,4 +8,6 @@ You can change the settings right from within the module's settings page.
 
 ### Important Note
 
-Since this module changes your pages' URLs, it is recommended to turn on the **Page Path History** core module. 
+This module will rename your pages. This may have negative effects (e.g. on SEO).
+
+Since this module changes your pages' URLs, it is recommended to turn on the **Page Path History** core module, although it won’t catch every URL change.

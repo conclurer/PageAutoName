@@ -181,10 +181,12 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
         foreach ($fields as $element) {
             if ($page->$element == null) continue;
 
-            if (($element == 'created' || $element == 'updated') && $this->defaultDateFormat != null) {
+            $field = wire('fields')->get($element) ;
+
+            if ($field->type == 'FieldtypeDatetime' && $this->defaultDateFormat != null) {
                 $newNameElements[] = date($this->defaultDateFormat, $page->$element);
             }
-            else $newNameElements[] = "".$page->$element;
+            else $newNameElements[] = $page->$element;
         }
 
         $page->outputFormatting = false;

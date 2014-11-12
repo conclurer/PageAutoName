@@ -25,7 +25,7 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
         $applyToAllTemplatesField->name = 'applyToAllTemplates';
         $applyToAllTemplatesField->label = __('Apply to all Templates');
         $applyToAllTemplatesField->description = __('If enabled, the general pattern will be applied to all templates.');
-        $applyToAllTemplatesField->columnWidth = 50;
+        $applyToAllTemplatesField->columnWidth = 33;
         if (isset($data['applyToAllTemplates']) && $data['applyToAllTemplates'] == 1) $applyToAllTemplatesField->checked = 1;
         $wrapper->add($applyToAllTemplatesField);
 
@@ -33,9 +33,17 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
         $applyOnlyOnPublishField->name = 'applyOnlyOnPublish';
         $applyOnlyOnPublishField->label = __('Apply only when published');
         $applyOnlyOnPublishField->description = __('If enabled, the page is only renamed when being published.');
-        $applyOnlyOnPublishField->columnWidth = 50;
+        $applyOnlyOnPublishField->columnWidth = 33;
         if (isset($data['applyOnlyOnPublish']) && $data['applyOnlyOnPublish'] == 1) $applyOnlyOnPublishField->checked = 1;
         $wrapper->add($applyOnlyOnPublishField);
+        
+        $applyToTitleTooField = wire('modules')->get('InputfieldCheckbox');
+        $applyToTitleTooField->name = 'applyToTitleToo';
+        $applyToTitleTooField->label = __('Apply to Title too');
+        $applyToTitleTooField->description = __('If enabled, the page is also retitled.');
+        $applyToTitleTooField->columnWidth = 33;
+        if (isset($data['applyToTitleToo']) && $data['applyToTitleToo'] == 1) $applyToTitleTooField->checked = 1;
+        $wrapper->add($applyToTitleTooField);
 
         $individualPatterns = array();
         $specifiedTemplatesField = wire('modules')->get('InputfieldCheckboxes');
@@ -85,16 +93,17 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
             'title' => __('Auto Name'),
             'summary' => __("Changes a page's name field after the page has been edited"),
             'author' => 'Conclurer GbR',
-            'version' => '110',
+            'version' => '111',
             'autoload' => true
         );
     }
 
-    protected $applyToAllTemplates = false, $applyOnlyOnPublish = false, $specifiedTemplates = array(), $generalPattern = null, $individualPatterns = array(), $defaultDateFormat = null;
+    protected $applyToAllTemplates = false, $applyOnlyOnPublish = false, $applyToTitleTooField = false, $specifiedTemplates = array(), $generalPattern = null, $individualPatterns = array(), $defaultDateFormat = null;
 
     public function init() {
         if (isset($this->data['applyToAllTemplates'])) $this->applyToAllTemplates = $this->data['applyToAllTemplates'] == 1;
         if (isset($this->data['applyOnlyOnPublish'])) $this->applyOnlyOnPublish = $this->data['applyOnlyOnPublish'] == 1;
+        if (isset($this->data['applyToTitleToo'])) $this->applyToTitleToo = $this->data['applyToTitleToo'] == 1;
 
         if (!$this->applyToAllTemplates && !empty($this->data['specifiedTemplates'])) {
             $this->specifiedTemplates = $this->data['specifiedTemplates'];
@@ -151,6 +160,8 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
 
         $page->name = $baseName.($suffix > 0 ? "-$suffix" : "");
 
+        if ($this->applyToTitleToo) $page->title = $page->name;
+
         $event->return = $page;
     }
 
@@ -180,11 +191,13 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
         $page->outputFormatting = true;
         foreach ($fields as $element) {
             if ($page->$element == null) continue;
+            
+            $field = wire('fields')->get($element) ;
 
-            if (($element == 'created' || $element == 'updated') && $this->defaultDateFormat != null) {
+            if ($field->type == 'FieldtypeDatetime' && $this->defaultDateFormat != null) {
                 $newNameElements[] = date($this->defaultDateFormat, $page->$element);
             }
-            else $newNameElements[] = "".$page->$element;
+            else $newNameElements[] = $page->$element;
         }
 
         $page->outputFormatting = false;

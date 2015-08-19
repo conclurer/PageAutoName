@@ -141,7 +141,7 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
             // Check if other page exists with this name
             $existingPage = $page->siblings("name=$newName")->first();
 
-            if ($existingPage->id > 0) {
+            if ($existingPage && $existingPage->id > 0) {
                 $suffix++;
             }
             else {

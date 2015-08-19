@@ -85,7 +85,7 @@ class PageAutoName extends WireData implements Module, ConfigurableModule {
             'title' => __('Auto Name'),
             'summary' => __("Changes a page's name field after the page has been edited"),
             'author' => 'Conclurer GbR',
-            'version' => '110',
+            'version' => '111',
             'autoload' => true
         );
     }
